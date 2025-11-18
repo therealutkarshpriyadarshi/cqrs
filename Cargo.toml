@@ -3,8 +3,11 @@ members = [
     "crates/domain",
     "crates/event-store",
     "crates/messaging",
+    "crates/read-model",
     "crates/common",
     "services/command-service",
+    "services/query-service",
+    "services/projection-service",
 ]
 
 resolver = "2"
