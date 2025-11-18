@@ -1,6 +1,6 @@
 use anyhow::Result;
+use common::telemetry::{TelemetryConfig, init_telemetry, shutdown_telemetry};
 use std::net::SocketAddr;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod handlers;
 mod routes;
@@ -13,16 +13,23 @@ async fn main() -> Result<()> {
     // Load environment variables
     dotenv::dotenv().ok();
 
-    // Initialize tracing
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "query_service=info,read_model=info".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+    // Initialize telemetry with Jaeger support
+    let enable_jaeger = std::env::var("ENABLE_JAEGER")
+        .unwrap_or_else(|_| "false".to_string())
+        .parse()
+        .unwrap_or(false);
 
-    tracing::info!("Starting Query Service...");
+    let telemetry_config = TelemetryConfig {
+        service_name: "query-service".to_string(),
+        log_level: std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
+        jaeger_endpoint: std::env::var("JAEGER_ENDPOINT").ok(),
+        enable_jaeger,
+    };
+
+    init_telemetry(telemetry_config)?;
+
+    tracing::info!("Starting Query Service with Phase 5 features...");
+    tracing::info!("Distributed tracing: {}", if enable_jaeger { "enabled" } else { "disabled" });
 
     // Configuration from environment
     let database_url = std::env::var("DATABASE_URL")
@@ -55,7 +62,15 @@ async fn main() -> Result<()> {
     tracing::info!("Query service listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .await
+        .map_err(|e| {
+            tracing::error!("Server error: {}", e);
+            e
+        })?;
+
+    // Shutdown telemetry gracefully
+    shutdown_telemetry();
 
     Ok(())
 }
