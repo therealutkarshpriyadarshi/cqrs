@@ -2,7 +2,9 @@
 members = [
     "crates/domain",
     "crates/event-store",
+    "crates/messaging",
     "crates/common",
+    "services/command-service",
 ]
 
 resolver = "2"
@@ -12,12 +14,20 @@ resolver = "2"
 tokio = { version = "1.35", features = ["full"] }
 tokio-stream = "0.1"
 
+# Web Framework
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["trace", "cors"] }
+
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 # Database
 sqlx = { version = "0.7", features = ["runtime-tokio-native-tls", "postgres", "uuid", "chrono", "json"] }
+
+# Kafka
+rdkafka = { version = "0.36", features = ["cmake-build"] }
 
 # UUID & Time
 uuid = { version = "1.6", features = ["v4", "serde"] }
@@ -31,8 +41,13 @@ anyhow = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
+# Validation
+validator = { version = "0.18", features = ["derive"] }
+
 # Utilities
 async-trait = "0.1"
+dotenv = "0.15"
 
 # Testing
 mockall = "0.12"
+tokio-test = "0.4"

@@ -1,0 +1,52 @@
+[package]
+name = "command-service"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "command-service"
+path = "src/main.rs"
+
+[dependencies]
+# Internal crates
+domain = { path = "../../crates/domain" }
+event-store = { path = "../../crates/event-store" }
+messaging = { path = "../../crates/messaging" }
+common = { path = "../../crates/common" }
+
+# Web framework
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# UUID & Time
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Validation
+validator = { workspace = true }
+
+# Utilities
+async-trait = { workspace = true }
+dotenv = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
