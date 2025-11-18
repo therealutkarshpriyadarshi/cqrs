@@ -1,6 +1,6 @@
+use common::telemetry::{TelemetryConfig, init_telemetry, shutdown_telemetry};
 use std::net::SocketAddr;
 use tower_http::trace::TraceLayer;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod handlers;
 mod routes;
@@ -8,21 +8,31 @@ mod state;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize tracing
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "command_service=info,tower_http=debug".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+    // Load environment variables
+    dotenv::dotenv().ok();
 
-    tracing::info!("Starting command service...");
+    // Initialize telemetry with Jaeger support
+    let enable_jaeger = std::env::var("ENABLE_JAEGER")
+        .unwrap_or_else(|_| "false".to_string())
+        .parse()
+        .unwrap_or(false);
+
+    let telemetry_config = TelemetryConfig {
+        service_name: "command-service".to_string(),
+        log_level: std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
+        jaeger_endpoint: std::env::var("JAEGER_ENDPOINT").ok(),
+        enable_jaeger,
+    };
+
+    init_telemetry(telemetry_config)?;
+
+    tracing::info!("Starting command service with Phase 5 features...");
+    tracing::info!("Distributed tracing: {}", if enable_jaeger { "enabled" } else { "disabled" });
 
     // Initialize application state
     let state = state::AppState::new().await?;
 
-    // Build router
+    // Build router with tracing layer
     let app = routes::build_router(state).layer(TraceLayer::new_for_http());
 
     // Start server
@@ -35,7 +45,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Command service listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .await
+        .map_err(|e| {
+            tracing::error!("Server error: {}", e);
+            e
+        })?;
+
+    // Shutdown telemetry gracefully
+    shutdown_telemetry();
 
     Ok(())
 }

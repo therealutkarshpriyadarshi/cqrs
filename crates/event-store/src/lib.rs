@@ -1,6 +1,10 @@
+pub mod idempotency;
 pub mod postgres_event_store;
+pub mod replay;
 
+pub use idempotency::{IdempotencyChecker, generate_idempotency_key};
 pub use postgres_event_store::PostgresEventStore;
+pub use replay::{EventReplayService, Rebuildable, ReplayConfig, ReplayStats};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};

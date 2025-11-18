@@ -1,4 +1,5 @@
 use anyhow::Result;
+use common::telemetry::{TelemetryConfig, init_telemetry, shutdown_telemetry};
 use domain::events::order_events::*;
 use messaging::EventConsumer;
 use read_model::OrderProjection;
@@ -10,7 +11,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod event_processor;
 use event_processor::EventProcessor;
@@ -26,16 +26,23 @@ async fn main() -> Result<()> {
     // Load environment variables
     dotenv::dotenv().ok();
 
-    // Initialize tracing
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "projection_service=info,read_model=info".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+    // Initialize telemetry with Jaeger support
+    let enable_jaeger = std::env::var("ENABLE_JAEGER")
+        .unwrap_or_else(|_| "false".to_string())
+        .parse()
+        .unwrap_or(false);
 
-    info!("Starting Projection Service...");
+    let telemetry_config = TelemetryConfig {
+        service_name: "projection-service".to_string(),
+        log_level: std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
+        jaeger_endpoint: std::env::var("JAEGER_ENDPOINT").ok(),
+        enable_jaeger,
+    };
+
+    init_telemetry(telemetry_config)?;
+
+    info!("Starting Projection Service with Phase 5 features...");
+    info!("Distributed tracing: {}", if enable_jaeger { "enabled" } else { "disabled" });
 
     // Configuration from environment
     let database_url = std::env::var("DATABASE_URL")
@@ -129,6 +136,10 @@ async fn main() -> Result<()> {
     info!("Shutting down projection service...");
     handle.close();
     pool.close().await;
+
+    // Shutdown telemetry gracefully
+    shutdown_telemetry();
+
     info!("Projection service stopped");
 
     Ok(())

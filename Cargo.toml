@@ -45,6 +45,17 @@ anyhow = "1.0"
 # Logging & Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-opentelemetry = "0.22"
+opentelemetry = { version = "0.21", features = ["trace"] }
+opentelemetry-jaeger = { version = "0.20", features = ["rt-tokio"] }
+opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"] }
+
+# Metrics
+prometheus = "0.13"
+lazy_static = "1.4"
+
+# Circuit Breaker & Resilience
+# Using a simple custom implementation instead of failsafe
 
 # Validation
 validator = { version = "0.18", features = ["derive"] }
@@ -52,6 +63,7 @@ validator = { version = "0.18", features = ["derive"] }
 # Utilities
 async-trait = "0.1"
 dotenv = "0.15"
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
 
 # Testing
 mockall = "0.12"

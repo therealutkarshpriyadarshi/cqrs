@@ -1,12 +1,13 @@
 use std::sync::Arc;
-use tracing::{info, Level};
-use tracing_subscriber::FmtSubscriber;
-
+use tracing::info;
+use common::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
 use common::config::Config;
+use common::telemetry::{TelemetryConfig, init_telemetry, shutdown_telemetry};
 use messaging::producer::EventPublisher;
 use saga::coordinator::SagaCoordinator;
 use saga::repository::PostgresSagaRepository;
 use sqlx::postgres::PgPoolOptions;
+use std::time::Duration;
 
 mod event_consumer;
 mod sagas;
@@ -15,21 +16,27 @@ use event_consumer::SagaEventConsumer;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize tracing
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
-        .with_target(false)
-        .with_thread_ids(true)
-        .with_file(true)
-        .with_line_number(true)
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber)?;
-
-    info!("Starting Saga Orchestrator Service...");
-
     // Load configuration
     dotenv::dotenv().ok();
+
+    // Initialize telemetry with Jaeger support
+    let enable_jaeger = std::env::var("ENABLE_JAEGER")
+        .unwrap_or_else(|_| "false".to_string())
+        .parse()
+        .unwrap_or(false);
+
+    let telemetry_config = TelemetryConfig {
+        service_name: "saga-orchestrator".to_string(),
+        log_level: std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
+        jaeger_endpoint: std::env::var("JAEGER_ENDPOINT").ok(),
+        enable_jaeger,
+    };
+
+    init_telemetry(telemetry_config)?;
+
+    info!("Starting Saga Orchestrator Service with Phase 5 features...");
+    info!("Distributed tracing: {}", if enable_jaeger { "enabled" } else { "disabled" });
+
     let config = Config::from_env()?;
 
     // Create database connection pool
@@ -69,6 +76,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Start consuming events
     consumer.start().await;
+
+    // Shutdown telemetry gracefully
+    shutdown_telemetry();
+
+    info!("Saga Orchestrator Service stopped");
 
     Ok(())
 }
