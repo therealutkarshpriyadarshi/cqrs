@@ -18,6 +18,28 @@ pub struct EventEnvelope {
     pub sequence_number: Option<i64>,
 }
 
+impl EventEnvelope {
+    /// Create a new event envelope from a domain event
+    pub fn new<T: DomainEvent>(
+        aggregate_id: Uuid,
+        aggregate_type: String,
+        event: T,
+        metadata: EventMetadata,
+    ) -> Self {
+        Self {
+            event_id: Uuid::new_v4(),
+            aggregate_id,
+            aggregate_type,
+            event_type: T::event_type().to_string(),
+            event_version: T::event_version(),
+            payload: serde_json::to_value(&event).unwrap(),
+            metadata,
+            timestamp: Utc::now(),
+            sequence_number: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventMetadata {
     pub correlation_id: Uuid,

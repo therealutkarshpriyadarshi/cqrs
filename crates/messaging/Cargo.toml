@@ -1,15 +1,14 @@
 [package]
-name = "domain"
+name = "messaging"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+rdkafka = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 uuid = { workspace = true }
-chrono = { workspace = true }
-thiserror = { workspace = true }
-validator = { workspace = true }
-
-[dev-dependencies]
 tokio = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
