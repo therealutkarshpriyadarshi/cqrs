@@ -1,0 +1,27 @@
+[package]
+name = "read-model"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+
+# Redis for caching
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+
+# Domain events
+domain = { path = "../domain" }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+mockall = { workspace = true }
