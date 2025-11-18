@@ -4,10 +4,12 @@ members = [
     "crates/event-store",
     "crates/messaging",
     "crates/read-model",
+    "crates/saga",
     "crates/common",
     "services/command-service",
     "services/query-service",
     "services/projection-service",
+    "services/saga-orchestrator",
 ]
 
 resolver = "2"

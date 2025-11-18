@@ -1,4 +1,6 @@
 pub mod order_events;
+pub mod inventory_events;
+pub mod payment_events;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
