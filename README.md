@@ -1,10 +1,11 @@
-# CQRS & Event Sourcing Order Processing System
+# CQRS & Event Sourcing Order Processing System (Rust)
 
-**Production-grade order processing system demonstrating Command Query Responsibility Segregation (CQRS) and Event Sourcing patterns used by Netflix, Uber, and Amazon.**
+**Production-grade order processing system demonstrating Command Query Responsibility Segregation (CQRS) and Event Sourcing patterns used by Netflix, Uber, and Amazon - implemented in Rust.**
 
-[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev)
+[![Rust](https://img.shields.io/badge/Rust-1.75+-000000?style=flat&logo=rust)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Phase](https://img.shields.io/badge/Phase-1%20Complete-success)](docs/PHASE1.md)
 
 ---
 
@@ -77,49 +78,43 @@ This project implements a complete **event-sourced microservices architecture** 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Go 1.21+** (or Python 3.11+)
+- **Rust 1.75+**
 - **Docker** & **Docker Compose**
 - **Make**
 
 ### Get Running in 3 Commands
 
 ```bash
-# 1. Start infrastructure (PostgreSQL, Kafka, Redis)
-docker-compose up -d
+# 1. Copy environment file
+cp .env.example .env
 
-# 2. Run database migrations & create Kafka topics
-make setup
+# 2. Start infrastructure and run migrations
+make dev
 
-# 3. Start all services
-make run
+# 3. Run tests
+make test
 ```
 
-**Services running on**:
-- Command API: http://localhost:8080
-- Query API: http://localhost:8081
-- Admin API: http://localhost:8082
-- Grafana: http://localhost:3000
-- Jaeger: http://localhost:16686
+**Infrastructure running on**:
+- PostgreSQL: localhost:5432
+- Kafka: localhost:9093
+- Redis: localhost:6379
+- pgAdmin: http://localhost:5050
+- Kafka UI: http://localhost:8090
 
-### Test It Out
+### Current Status: Phase 1 Complete ✅
 
-```bash
-# Create an order (Command)
-curl -X POST http://localhost:8080/api/v1/orders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customer_id": "550e8400-e29b-41d4-a716-446655440000",
-    "items": [{"product_id": "...", "quantity": 2, "price": 29.99}]
-  }'
+Phase 1 implements the foundation:
+- ✅ Domain layer with events and aggregates
+- ✅ PostgreSQL event store with optimistic locking
+- ✅ Database migrations
+- ✅ Unit tests (21 passing)
+- ✅ Integration tests
+- ✅ Docker Compose environment
 
-# Query the order (Read) - notice separate endpoint!
-curl http://localhost:8081/api/v1/orders/{order_id}
+**See**: [Phase 1 Documentation](docs/PHASE1.md)
 
-# View event stream (Event Sourcing)
-curl http://localhost:8082/api/v1/admin/events/{order_id}
-```
-
-**See full guide**: [QUICKSTART.md](QUICKSTART.md)
+**Next**: Phase 2 will add command handlers, Kafka publishing, and HTTP API
 
 ---
 
@@ -127,21 +122,25 @@ curl http://localhost:8082/api/v1/admin/events/{order_id}
 
 | Document | Description |
 |----------|-------------|
-| **[ARCHITECTURE.md](ARCHITECTURE.md)** | Complete system design, event schemas, database design |
-| **[REQUIREMENTS.md](REQUIREMENTS.md)** | Comprehensive checklist of components needed |
-| **[TECH_COMPARISON.md](TECH_COMPARISON.md)** | Go vs Python detailed comparison for CQRS/ES |
-| **[QUICKSTART.md](QUICKSTART.md)** | Step-by-step setup and testing guide |
+| **[RUST_ROADMAP.md](RUST_ROADMAP.md)** | Complete Rust implementation roadmap (6 phases) |
+| **[docs/PHASE1.md](docs/PHASE1.md)** | Phase 1 implementation details ⭐ START HERE |
+| **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** | Development guide and workflow |
+| **[ARCHITECTURE.md](ARCHITECTURE.md)** | System design, event schemas, database design |
+| **[REQUIREMENTS.md](REQUIREMENTS.md)** | Comprehensive checklist of components |
+| **[TECH_COMPARISON.md](TECH_COMPARISON.md)** | Technology stack comparison |
+| **[QUICKSTART.md](QUICKSTART.md)** | Quick setup guide |
 
 ---
 
 ## 🛠️ Technology Stack
 
-### Core Services (Go)
-- **Web Framework**: Gin
+### Core Services (Rust)
+- **Async Runtime**: Tokio
+- **Web Framework**: Axum (Phase 2)
 - **Event Streaming**: Apache Kafka
-- **Event Store**: PostgreSQL
-- **Read Model Cache**: Redis
-- **Inter-Service**: gRPC + Protocol Buffers
+- **Event Store**: PostgreSQL + SQLx
+- **Read Model Cache**: Redis (Phase 3)
+- **Serialization**: Serde + JSON
 
 ### Infrastructure
 - **Message Broker**: Kafka + Zookeeper
@@ -156,32 +155,30 @@ curl http://localhost:8082/api/v1/admin/events/{order_id}
 
 ```
 cqrs/
-├── cmd/                          # Service entry points
-│   ├── command-service/          # Write operations
-│   ├── query-service/            # Read operations
-│   ├── projection-service/       # Event projection engine
-│   └── saga-orchestrator/        # Distributed transactions
-├── internal/
-│   ├── domain/                   # Business logic & aggregates
-│   │   ├── order/                # Order aggregate, events
-│   │   ├── payment/              # Payment aggregate
-│   │   └── inventory/            # Inventory aggregate
-│   ├── application/
-│   │   ├── commands/handlers/    # Command handlers
-│   │   ├── queries/handlers/     # Query handlers
-│   │   └── sagas/                # Saga coordinators
-│   ├── infrastructure/
-│   │   ├── eventstore/           # Event persistence
-│   │   ├── messaging/kafka/      # Event publishing
-│   │   └── cache/redis/          # Read model caching
-│   └── interfaces/
-│       ├── http/                 # REST APIs
-│       └── grpc/                 # gRPC services
-├── deployments/
-│   ├── docker/                   # Docker Compose
-│   └── kubernetes/               # K8s manifests
-├── docs/                         # Additional documentation
-└── tests/                        # Integration & E2E tests
+├── crates/                       # Rust workspace crates
+│   ├── domain/                   # Core domain logic
+│   │   ├── aggregates/           # Order aggregate
+│   │   ├── events/               # Domain events
+│   │   ├── commands/             # Command types
+│   │   └── value_objects/        # Value objects
+│   ├── event-store/              # Event persistence
+│   │   └── postgres_event_store.rs
+│   └── common/                   # Shared utilities
+│       ├── config.rs
+│       ├── telemetry.rs
+│       └── errors.rs
+├── migrations/                   # SQL migrations
+│   ├── 001_create_events_table.sql
+│   └── 002_create_snapshots_table.sql
+├── tests/                        # Integration tests
+│   └── integration/
+│       └── event_store_tests.rs
+├── docs/                         # Documentation
+│   ├── PHASE1.md
+│   └── DEVELOPMENT.md
+├── docker-compose.yml            # Infrastructure
+├── Makefile                      # Development commands
+└── Cargo.toml                    # Workspace configuration
 ```
 
 ---
@@ -239,20 +236,24 @@ These patterns are used by:
 ## 🧪 Testing
 
 ```bash
-# Unit tests
+# Unit tests (fast, no dependencies)
 make test-unit
+# Output: 21 passing tests
 
 # Integration tests (requires Docker)
-make test-integration
+make docker-up
+make migrate
+cargo test --test event_store_tests -- --ignored
 
-# E2E tests
-make test-e2e
+# All tests
+make test
 
-# Load testing
-make load-test
+# Watch mode (auto-run on changes)
+make watch
 
-# All tests with coverage
-make test-all
+# Format and lint
+make fmt
+make lint
 ```
 
 ---
@@ -352,13 +353,29 @@ MIT License - see [LICENSE](LICENSE)
 
 ## 🎯 Next Steps
 
-1. **Read the docs**: Start with [ARCHITECTURE.md](ARCHITECTURE.md)
-2. **Choose your stack**: Review [TECH_COMPARISON.md](TECH_COMPARISON.md)
-3. **Get started**: Follow [QUICKSTART.md](QUICKSTART.md)
-4. **Build features**: Implement your own aggregates and sagas!
+1. **Understand Phase 1**: Read [docs/PHASE1.md](docs/PHASE1.md)
+2. **Review the roadmap**: Check [RUST_ROADMAP.md](RUST_ROADMAP.md) for all 6 phases
+3. **Start developing**: See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+4. **Implement Phase 2**: Command handlers, Kafka publishing, HTTP API
+
+## 📋 Implementation Progress
+
+- ✅ **Phase 1**: Foundation & Setup (COMPLETE)
+  - Domain layer (events, aggregates, commands)
+  - PostgreSQL event store
+  - Database migrations
+  - Unit & integration tests
+- ⏳ **Phase 2**: Command Side (Next)
+  - Command handlers
+  - Kafka event publisher
+  - Axum HTTP API
+- 🔲 **Phase 3**: Query Side
+- 🔲 **Phase 4**: Saga Orchestration
+- 🔲 **Phase 5**: Production Features
+- 🔲 **Phase 6**: Testing & Deployment
 
 **Questions?** Open an issue or start a discussion!
 
 ---
 
-**Built with ❤️ using CQRS, Event Sourcing, and modern microservices patterns**
+**Built with 🦀 using Rust, CQRS, Event Sourcing, and modern microservices patterns**
